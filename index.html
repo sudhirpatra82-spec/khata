@@ -228,3 +228,26 @@ load(); renderHome();
 }
 const open = id => $(id).classList.add("on");
 const close = () => document.querySelectorAll(".sheet").forEach(s=>s.classList.remove("on"));
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+let data = [], cur = null, mode = 1;
+function load(){ try{ data = JSON.parse(localStorage.getItem("khata")) || []; }catch(e){ data = []; } }
+function save(){ try{ localStorage.setItem("khata", JSON.stringify(data)); }catch(e){} }
+const bal = c => c.entries.reduce((s,e)=>s+e.amt,0);
+const rs = n => "₹" + Math.abs(n).toLocaleString("en-IN");
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const esc = s => s.replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+function cls(b){ return b>0 ? "due" : b<0 ? "adv" : "zero"; }
+
+function renderHome(){
+  const q = $("q").value.trim().toLowerCase();
+  $("tot").textContent = rs(data.reduce((s,c)=>s+Math.max(bal(c),0),0));
+  const rows = data.filter(c => c.name.toLowerCase().includes(q))
+    .sort((a,b)=>bal(b)-bal(a));
+  $("list").innerHTML = rows.length ? rows.map(c => {
+    const b = bal(c);
+    return `<div class="row" data-id="${c.id}" tabindex="0"><div>${esc(c.name)}<small>${esc(c.phone||"Number nahi")}</small></div>
+    <div class="amt ${cls(b)}">${b===0?"Hisaab saaf":rs(b)}<small>${b>0?"milna hai":b<0?"dena hai":""}</small></div></div>`;
+  }).join("") : `<div class="empty">${data.length ? "Koi customer nahi mila." : "Abhi koi customer nahi hai.<br>Upar + Naya dabakar pehla customer jodein."}</div>`;
+}
