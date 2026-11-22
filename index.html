@@ -250,4 +250,113 @@ function renderHome(){
     return `<div class="row" data-id="${c.id}" tabindex="0"><div>${esc(c.name)}<small>${esc(c.phone||"Number nahi")}</small></div>
     <div class="amt ${cls(b)}">${b===0?"Hisaab saaf":rs(b)}<small>${b>0?"milna hai":b<0?"dena hai":""}</small></div></div>`;
   }).join("") : `<div class="empty">${data.length ? "Koi customer nahi mila." : "Abhi koi customer nahi hai.<br>Upar + Naya dabakar pehla customer jodein."}</div>`;
+}function renderDetail(){
+  const c = data.find(x=>x.id===cur); if(!c) return show("home");
+  const b = bal(c);
+  $("dName").textContent = c.name;
+  $("dPhone").textContent = c.phone || "";
+  $("dBal").textContent = (b<0?"Aapko dena hai ":"") + rs(b);
+  $("entries").innerHTML = c.entries.slice().reverse().map(e =>
+    `<div class="entry"><div>${esc(e.note||(e.amt>0?"Udhaar":"Jama"))}<br><small>${e.date}</small></div>
+    <div class="amt ${e.amt>0?"due":"adv"}">${e.amt>0?"+":"-"}${rs(e.amt)}<br><button class="xdel" data-e="${e.id}">hatayein</button></div></div>`).join("")
+    || `<div class="empty">Abhi koi entry nahi hai.</div>`;
 }
+
+function show(v){
+  $("home").classList.toggle("hide", v!=="home");
+  $("detail").classList.toggle("hide", v!=="detail");
+  if(v==="home"){ renderHome(); } else { renderDetail(); }
+}
+const open = id => $(id).classList.add("on");
+const close = () => document.querySelectorAll(".sheet").forEach(s=>s.classList.remove("on"));
+
+$("q").oninput = renderHome;
+$("addC").onclick = () => { $("cName").value=""; $("cPhone").value=""; open("sheetC"); $("cName").focus(); };
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = close);
+$("back").onclick = () => show("home");
+$("saveC").onclick = () => {
+  const name = $("cName").value.trim();
+  if(!name){ $("cName").focus(); return; }
+  data.push({id:uid(), name, phone:$("cPhone").value.trim(), entries:[]});
+  save(); close(); renderHome();
+};
+
+function openRow(e){ const r = e.target.closest(".row"); if(r){ cur = r.dataset.id; show("detail"); } }
+$("list").onclick = openRow;
+$("list").onkeydown = e => { if(e.key==="Enter") openRow(e); };
+
+function entry(m){
+  mode = m;
+  $("eTitle").textContent = m>0 ? "Udhaar diya" : "Paisa mila";
+  $("eAmt").value = ""; $("eNote").value = "";
+  open("sheetE"); $("eAmt").focus();
+}
+$("giveBtn").onclick = () => entry(1);
+$("getBtn").onclick = () => entry(-1);
+
+$("saveE").onclick = () => {
+  const n = parseFloat($("eAmt").value);
+  if(!(n>0)){ $("eAmt").focus(); return; }
+  const c = data.find(x=>x.id===cur);
+  c.entries.push({id:uid(), amt:mode*n, note:$("eNote").value.trim(),
+    date:new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})});
+  save(); close(); renderDetail();
+};$("wa").onclick = () => {
+  const c = data.find(x=>x.id===cur), b = bal(c);
+  if(b<=0){
+    $("wa").textContent = "Is customer ka koi baaki nahi hai";
+    setTimeout(() => { $("wa").textContent = "WhatsApp par yaad dilayein"; }, 2500);
+    return;
+  }
+  const msg = `Namaste ${c.name} ji, aapka ${rs(b)} baaki hai. Kripya jaldi bhej dein. Dhanyavaad!`;
+  let ph = (c.phone||"").replace(/\D/g,"");
+  if(ph.length===10) ph = "91"+ph;
+  const a = document.createElement("a");
+  a.href = "https://wa.me/"+ph+"?text="+encodeURIComponent(msg);
+  a.target = "_blank"; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+
+let armed = false;
+$("delC").onclick = () => {
+  if(!armed){
+    armed = true;
+    $("delC").textContent = "Pakka? Hatane ke liye dobara dabayein";
+    setTimeout(() => { armed = false; $("delC").textContent = "Is customer ko hatayein"; }, 4000);
+    return;
+  }
+  armed = false; $("delC").textContent = "Is customer ko hatayein";
+  data = data.filter(x=>x.id!==cur); save(); show("home");
+};
+
+let armedE = null;
+$("entries").onclick = ev => {
+  const b = ev.target.closest(".xdel"); if(!b) return;
+  if(armedE !== b.dataset.e){ armedE = b.dataset.e; b.textContent = "pakka? dobara dabayein"; return; }
+  const c = data.find(x=>x.id===cur);
+  c.entries = c.entries.filter(x=>x.id!==armedE); armedE = null; save(); renderDetail();
+};
+
+$("bk").onclick = () => { $("bkTxt").value = ""; open("sheetB"); };
+$("bkShow").onclick = () => { $("bkTxt").value = JSON.stringify(data); $("bkTxt").select(); };
+$("bkWa").onclick = () => {
+  const a = document.createElement("a");
+  a.href = "https://wa.me/?text=" + encodeURIComponent("KHATA-BACKUP " + JSON.stringify(data));
+  a.target = "_blank"; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+$("bkRestore").onclick = () => {
+  const t = $("bkTxt").value.trim().replace(/^KHATA-BACKUP\s*/, "");
+  try{
+    const d = JSON.parse(t);
+    if(!Array.isArray(d)) throw 0;
+    data = d; save(); close(); renderHome();
+  }catch(e){
+    const b = $("bkRestore"); b.textContent = "Text sahi nahi hai, dobara paste karein";
+    setTimeout(() => { b.textContent = "Restore karein (abhi ka data badal jayega)"; }, 3000);
+  }
+};
+
+load(); renderHome();
+})();
+</script>
