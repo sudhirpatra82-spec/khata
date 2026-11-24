@@ -359,6 +359,48 @@ $("bkRestore").onclick = () => {
 
 load(); renderHome();
 })();
+</script><script>
+(function(){
+  var h = document.querySelector("#detail header");
+  var b = document.createElement("button");
+  b.className = "back";
+  b.textContent = "Number badlein";
+  b.style.cssText = "display:block;margin-top:8px;text-decoration:underline";
+  h.appendChild(b);
+  b.onclick = function(){
+    var name = document.getElementById("dName").textContent;
+    var d = [];
+    try { d = JSON.parse(localStorage.getItem("khata")) || []; } catch(e) {}
+    var c = d.find(function(x){ return x.name === name; });
+    if(!c) return;
+    var n = prompt("Naya mobile number (10 digit):", c.phone || "");
+    if(n === null) return;
+    c.phone = n.trim();
+    try { localStorage.setItem("khata", JSON.stringify(d)); } catch(e) {}
+    location.reload();
+  };
+})();
+</script><script>
+(function(){
+  var h = document.querySelector("#detail header");
+  var b = document.createElement("button");
+  b.className = "back";
+  b.textContent = "Number badlein";
+  b.style.cssText = "display:block;margin-top:8px;text-decoration:underline";
+  h.appendChild(b);
+  b.onclick = function(){
+    var name = document.getElementById("dName").textContent;
+    var d = [];
+    try { d = JSON.parse(localStorage.getItem("khata")) || []; } catch(e) {}
+    var c = d.find(function(x){ return x.name === name; });
+    if(!c) return;
+    var n = prompt("Naya mobile number (10 digit):", c.phone || "");
+    if(n === null) return;
+    c.phone = n.trim();
+    try { localStorage.setItem("khata", JSON.stringify(d)); } catch(e) {}
+    location.reload();
+  };
+})();
 </script>
 </body>
 </html>
